@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Place Order</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            background-color: #f7f7f7;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 20px;
+        }
+
+        .main-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        h1,
+        h2,
+        h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        h2,
+        h3 {
+            font-size: 24px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            font-size: 18px;
+        }
+
+        label,
+        select,
+        input {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 18px;
+            width: 100%;
+        }
+
+        .service-column {
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .service-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .column-container {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .column-container>div {
+            flex-grow: 1;
+            margin-right: 20px;
+        }
+
+        .column-container>div:last-child {
+            margin-right: 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .manage-orders-button,
+        .arrived-shop-button {
+            margin-top: 20px;
+        }
+
+        .error {
+            border-color: red;
+        }
+
+        .order-summary {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .order-summary h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+
+        .order-summary p {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        #order-details {
+            white-space: pre-wrap;
+            font-size: 18px;
+        }
+
+        #copy-button,
+        #whatsapp-button {
+            padding: 10px;
+            font-size: 18px;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            display: inline-block;
+            text-align: center;
+        }
+
+        #copy-button {
+            background-color: #28a745;
+        }
+
+        #copy-button:hover {
+            background-color: #218838;
+        }
+
+        #whatsapp-button {
+            background-color: #25D366;
+            margin-left: 10px;
+        }
+
+        #whatsapp-button:hover {
+            background-color: #20c65a;
+        }
+
+        .order-summary-content {
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        .side-bar {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .summary-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .order-summary-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            width: 100%;
+            max-width: 400px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="main-content">
+            <h1>Place Order</h1>
+            <form action="{{ url_for('add_order_route') }}" method="POST">
+                <label for="customer_name">Customer Name:</label>
+                <input type="text" id="customer_name" name="customer_name" required>
+
+                <label for="phone_number">Phone Number:</label>
+                <input type="text" id="phone_number" name="phone_number" required oninput="validatePhoneNumber()">
+
+                <label for="branch">Branch:</label>
+                <select id="branch" name="branch" required>
+                    <option value="Branch 1">Branch mk</option>
+                    <option value="Branch 2">Branch karups</option>
+                    <option value="Branch 3">Branch 3</option>
+                </select>
+
+                <div class="column-container">
+                    <div class="service-column">
+                        <h3>Basic Services:</h3>
+                        <div class="service-item">
+                            <label for="iron_shirts_pants">Ironing - Shirts & Pants (₹10 per piece):</label>
+                            <input type="number" id="iron_shirts_pants" name="iron_shirts_pants_quantity" value="0" min="0">
+                        </div>
+                        <div class="service-item">
+                            <label for="iron_dhothi_sarees">Ironing - Dhothi & Sarees (₹20 per piece):</label>
+                            <input type="number" id="iron_dhothi_sarees" name="iron_dhothi_sarees_quantity" value="0" min="0">
+                        </div>
+                        <div class="service-item">
+                            <label for="laundry_shirts_pants">Laundry - Shirts & Pants (₹20 per piece):</label>
+                            <input type="number" id="laundry_shirts_pants" name="laundry_shirts_pants_quantity" value="0" min="0">
+                        </div>
+                        <div class="service-item">
+                            <label for="laundry_dhothi_sarees">Laundry - Dhothi & Sarees (₹40 per piece):</label>
+                            <input type="number" id="laundry_dhothi_sarees" name="laundry_dhothi_sarees_quantity" value="0" min="0">
+                        </div>
+                        <div class="service-item">
+                            <label for="washing_folding_only">Washing & Folding Only (₹50 per kg):</label>
+                            <input type="number" id="washing_folding_only" name="washing_folding_only_quantity" value="0" min="0">
+                        </div>
+                    </div>
+
+                    <div class="service-column">
+                        <h3>Special Care Clothing:</h3>
+                        <div class="service-item">
+                            <label for="starch_shirts_dhothis">Starch Treatment - Shirts & Dhothis (₹50 per piece):</label>
+                            <input type="number" id="starch_shirts_dhothis" name="starch_shirts_dhothi_quantity" value="0" min="0">
+                        </div>
+                        <div class="service-item">
+                            <label for="starch_sarees">Starch Treatment - Sarees (₹50 per piece):</label>
+                            <input type="number" id="starch_sarees" name="starch_saree_quantity" value="0" min="0">
+                        </div>
+                        <div class="service-item">
+                            <label for="drywash_blazer_coat">Dry Wash - Blazer/Coat (₹300 per piece):</label>
+                            <input type="number" id="drywash_blazer_coat" name="blazer_coat_quantity" value="0" min="0">
+                        </div>
+                        <div class="service-item">
+                            <label for="drywash_silk_dhothi_shirt">Dry Wash - Silk Dhothi & Shirt (₹300 per piece):</label>
+                            <input type="number" id="drywash_silk_dhothi_shirt" name="silk_dhothi_shirt_quantity" value="0" min="0">
+                        </div>
+                        <div class="service-item">
+                            <label for="drywash_silk_sarees">Dry Wash - Silk Sarees (₹500 per piece):</label>
+                            <input type="number" id="drywash_silk_sarees" name="silk_saree_quantity" value="0" min="0">
+                        </div>
+                        <div class="service-item">
+                            <label for="drywash_lehanga">Dry Wash - Lehanga (₹300 per piece):</label>
+                            <input type="number" id="drywash_lehanga" name="lehanga_quantity" value="0" min="0">
+                        </div>
+                    </div>
+
+                    <div class="service-column">
+                        <h3>Household Items:</h3>
+                        <div class="service-item">
+                            <label for="double_bedsheet">Double Bedsheet (₹50 per piece):</label>
+                            <input type="number" id="double_bedsheet" name="double_bedsheet_quantity" value="0" min="0">
+                        </div>
+                        <div class="service-item">
+                            <label for="single_bedsheet">Single Bedsheet (₹30 per piece):</label>
+                            <input type="number" id="single_bedsheet" name="single_bedsheet_quantity" value="0" min="0">
+                        </div>
+                        <div class="service-item">
+                            <label for="double_blanket">Double Blanket (₹100 per piece):</label>
+                            <input type="number" id="double_blanket" name="double_blanket_quantity" value="0" min="0">
+                        </div>
+                        <div class="service-item">
+                            <label for="single_blanket">Single Blanket (₹50 per piece):</label>
+                            <input type="number" id="single_blanket" name="single_blanket_quantity" value="0" min="0">
+                        </div>
+                        <div class="service-item">
+                            <label for="carpet_washing">Carpet Washing (₹500 per piece):</label>
+                            <input type="number" id="carpet_washing" name="carpet_quantity" value="0" min="0">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit">Add Order</button>
+            </form>
+        </div>
+
+        <div class="summary-container">
+            <div id="order-summary" class="order-summary order-summary-container" style="display: {{ 'block' if order_id else 'none' }};">
+                <h2>Order Summary</h2>
+                <div id="order-details" class="order-summary-content">
+                    <p><strong>Order ID:</strong> {{ order_id }}</p>
+                    <p><strong>Customer Name:</strong> {{ customer_name }}</p>
+                    <p><strong>Phone Number:</strong> {{ phone_number }}</p>
+                    <p><strong>Branch:</strong> {{ branch }}</p>
+                    <p><strong>Total Amount:</strong> ₹{{ total_amount }}</p>
+                    <p><strong>Order Details:</strong></p>
+                    <pre>{{ order_details }}</pre>
+                </div>
+                <button id="copy-button" onclick="copyToClipboard()">Copy Order Details</button>
+                <a id="whatsapp-button" href="https://wa.me/91{{ phone_number }}?text={{ whatsapp_message }}" target="_blank">Send via WhatsApp</a>
+            </div>
+
+            <div class="side-bar">
+                <div class="order-summary-container">
+                    <h2>Today's Order Summary</h2>
+                    <ul>
+                        <li>Ironing - Shirts & Pants: {{ ironing_shirts_pants_total }}</li>
+                        <li>Ironing - Dhothi & Sarees: {{ ironing_dhothi_sarees_total }}</li>
+                        <li>Laundry - Shirts & Pants: {{ laundry_shirts_pants_total }}</li>
+                        <li>Laundry - Dhothi & Sarees: {{ laundry_dhothi_sarees_total }}</li>
+                        <li>Washing & Folding Only: {{ washing_folding_total }}</li>
+                        <li>Starch Treatment - Shirts & Dhothis: {{ starch_shirts_dhothis_total }}</li>
+                        <li>Starch Treatment - Sarees: {{ starch_sarees_total }}</li>
+                        <li>Dry Wash - Blazer/Coat: {{ drywash_blazer_coat_total }}</li>
+                        <li>Dry Wash - Silk Dhothi & Shirt: {{ drywash_silk_dhothi_shirt_total }}</li>
+                        <li>Dry Wash - Silk Sarees: {{ drywash_silk_sarees_total }}</li>
+                        <li>Double Bedsheet: {{ double_bedsheet_total }}</li>
+                        <li>Single Bedsheet: {{ single_bedsheet_total }}</li>
+                        <li>Double Blanket: {{ double_blanket_total }}</li>
+                        <li>Single Blanket: {{ single_blanket_total }}</li>
+                        <li>Carpet Washing: {{ carpet_washing_total }}</li>
+                    </ul>
+                    <h3>Total Items: {{ total_items }}</h3>
+                </div>
+            </div>
+            
+        <div class="main-content">
+            <!-- Button to view day list -->
+            <div class="view-day-list-button">
+                <a href="{{ url_for('view_day_list') }}">
+                    <button type="button">View Day List</button>
+                </a>
+            </div>
+
+            <!-- Button for arrived shop -->
+            <div class="arrived-shop-button">
+                <a href="{{ url_for('search_order') }}">
+                    <button type="button">Arrived at Shop</button>
+                </a>
+            </div>
+
+            <!-- Close the day -->
+            <h2>Close the Day</h2>
+            <form action="{{ url_for('close_day_route') }}" method="post">
+                <button type="submit">Close Day</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        function copyToClipboard() {
+            const orderDetails = document.getElementById('order-details').innerText;
+            navigator.clipboard.writeText(orderDetails).then(() => {
+                alert('Order details copied to clipboard!');
+            });
+        }
+
+        function validatePhoneNumber() {
+            const phoneNumberInput = document.getElementById('phone_number');
+            const phoneNumber = phoneNumberInput.value;
+            if (phoneNumber.length !== 10 || isNaN(phoneNumber)) {
+                phoneNumberInput.classList.add('error');
+            } else {
+                phoneNumberInput.classList.remove('error');
+            }
+        }
+    </script>
+</body>
+
+</html>

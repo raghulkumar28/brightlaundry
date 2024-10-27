@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search and Manage Orders</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f7f7f7;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 80%;
+            max-width: 600px;
+        }
+        label {
+            font-size: 18px;
+            margin-right: 10px;
+        }
+        input[type="text"],
+        input[type="month"] {
+            padding: 8px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .order-details, .delivery-card {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 600px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border: 1px solid #ccc;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        input[type="checkbox"] {
+            transform: scale(1.5);
+        }
+        .delivery-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .delivery-actions button {
+            width: 48%;
+        }
+        .hidden-field {
+            display: none;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            // Set current month as default
+            const monthInput = document.getElementById('selected_month');
+            const currentMonth = new Date().toISOString().slice(0, 7);
+            monthInput.value = currentMonth;
+
+            // Load any previously saved delivery card data
+            const savedData = document.getElementById('saved-delivery-data').value;
+            if (savedData) {
+                document.getElementById('delivery-card-body').innerHTML = savedData;
+            }
+        });
+
+        function addToDeliveryCard() {
+            const checkboxes = document.querySelectorAll('input[name="selected_orders"]:checked');
+            const deliveryCard = document.getElementById('delivery-card-body');
+
+            checkboxes.forEach(checkbox => {
+                const row = checkbox.closest('tr');
+                const orderId = row.querySelector('td:nth-child(2)').innerText;
+                const customerName = row.querySelector('td:nth-child(3)').innerText;
+                const phoneNumber = row.querySelector('td:nth-child(4)').innerText;
+                const branch = row.querySelector('td:nth-child(5)').innerText;
+                const date = document.getElementById('selected_month').value;
+
+                // Check if the customer is already in the delivery card
+                const existingRow = document.querySelector(`#delivery-card-body tr[data-order-id="${orderId}"]`);
+                if (existingRow) return; // If already in the card, skip adding it again
+
+                const message = `Order ID: ${orderId} Name: ${customerName} Branch: ${branch} Your cloth is ready for pickup.`;
+                const whatsappUrl = `https://wa.me/91${phoneNumber}?text=${encodeURIComponent(message)}`;
+
+                const newRow = document.createElement('tr');
+                newRow.setAttribute('data-order-id', orderId);
+                newRow.innerHTML = `
+                    <td>${orderId}</td>
+                    <td>${customerName}</td>
+                    <td>${phoneNumber}</td>
+                    <td>${branch}</td>
+                    <td>${date}</td>
+                    <td>${message}</td>
+                    <td>
+                        <div class="delivery-actions">
+                            <button type="button" onclick="copyMessage('${message}')">Copy Message</button>
+                            <button type="button" onclick="sendWhatsApp('${whatsappUrl}')">Send WhatsApp</button>
+                        </div>
+                    </td>
+                `;
+                deliveryCard.appendChild(newRow);
+            });
+
+            // Save current delivery card data to hidden field
+            document.getElementById('saved-delivery-data').value = deliveryCard.innerHTML;
+        }
+
+        function copyMessage(message) {
+            navigator.clipboard.writeText(message).then(() => {
+                alert('Message copied to clipboard!');
+            });
+        }
+
+        function sendWhatsApp(whatsappUrl) {
+            window.open(whatsappUrl, '_blank');
+        }
+    </script>
+</head>
+<body>
+    <h1>Search and Manage Orders</h1>
+    <form action="{{ url_for('search_order') }}" method="post">
+        <label for="selected_month">Select Month:</label>
+        <input type="month" id="selected_month" name="selected_month" required>
+
+        <label for="order_id">Order ID:</label>
+        <input type="text" id="order_id" name="order_id">
+        
+        <label for="customer_name">Customer Name:</label>
+        <input type="text" id="customer_name" name="customer_name">
+        
+        <label for="phone_number">Phone Number:</label>
+        <input type="text" id="phone_number" name="phone_number">
+        
+        <input type="hidden" id="saved-delivery-data" name="saved_delivery_data" class="hidden-field" value="{{ request.form.get('saved_delivery_data') }}">
+        
+        <button type="submit">Search</button>
+    </form>
+
+    {% if orders %}
+    <form method="post" action="{{ url_for('search_order') }}">
+        <div class="order-details">
+            <h2>Select Orders for Arrival</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Select</th>
+                        <th>Order ID</th>
+                        <th>Customer Name</th>
+                        <th>Phone Number</th>
+                        <th>Branch</th>
+                        <th>Cloth Type</th>
+                        <th>Quantity</th>
+                        <th>Total Price</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td><input type="checkbox" name="selected_orders" value="{{ order['Reference Number'] }}"></td>
+                        <td>{{ order['Reference Number'] }}</td>
+                        <td>{{ order['Customer Name'] }}</td>
+                        <td>{{ order['Phone Number'] }}</td>
+                        <td>{{ order['Branch'] }}</td>
+                        <td>{{ order['Cloth Type'] }}</td>
+                        <td>{{ order['Quantity'] }}</td>
+                        <td>{{ order['Total Price'] }}</td>
+                        <td>{{ order['Status'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button type="button" onclick="addToDeliveryCard()">Add to Today's Delivery Card</button>
+        </div>
+    </form>
+    {% endif %}
+
+    <div class="delivery-card">
+        <h2>Today's Delivery Card</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer Name</th>
+                    <th>Phone Number</th>
+                    <th>Branch</th>
+                    <th>Date</th>
+                    <th>Message</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="delivery-card-body">
+                <!-- Selected customers will be added here -->
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Orders</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #f7f7f7;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 600px;
+        }
+        label {
+            font-size: 18px;
+            margin-right: 10px;
+            display: block;
+            margin-bottom: 5px;
+        }
+        select, button, input {
+            padding: 8px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+        button {
+            color: #fff;
+            background-color: #28a745;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .hidden {
+            display: none;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .selected-customers {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .customer-list-item {
+            cursor: pointer;
+            padding: 5px;
+            background-color: #f1f1f1;
+            margin-bottom: 5px;
+        }
+        .customer-list-item:hover {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Manage Orders</h1>
+
+<!-- Step 1: Select the Day (File) -->
+<h2>Select the Day and Find Customers</h2>
+<form id="file-selection-form">
+    <label for="file_name">Select Day (File):</label>
+    <select id="file_name" name="file_name" required>
+        {% for file in excel_files %}
+        <option value="{{ file }}">{{ file }} </option>
+        {% endfor %}
+    </select>
+    <button type="button" id="find-customers-btn">Find from this Day</button>
+</form>
+
+    <!-- Step 2: Search and Select Customers -->
+    <h2>Search for Customers</h2>
+    <input type="text" id="search-bar" placeholder="Search by customer name..." disabled>
+
+    <!-- Customer list displayed based on live search -->
+    <div id="customer-list">
+        <!-- Populated dynamically by JavaScript -->
+    </div>
+
+    <!-- Step 3: Display Selected Customers with Details -->
+    <h3>Selected Customers</h3>
+    <div id="selected-customers-card" class="selected-customers">
+        <!-- Selected customer names and details will be displayed here -->
+    </div>
+
+    <!-- Hidden form input to store selected customers -->
+    <input type="hidden" name="selected_customers" id="selected_customers_input">
+
+    <!-- Step 4: Update Status for Selected Customers -->
+    <h3>Update Status for Selected Customers</h3>
+    <form action="{{ url_for('update_selected_customers_status') }}" method="post">
+        <input type="hidden" name="selected_customers" id="selected_customers_input_for_status">
+        <input type="hidden" name="file_name" id="file_name_hidden">
+        <label for="status">Update Status:</label>
+        <select id="status" name="status" required>
+            {% for status in status_options %}
+            <option value="{{ status }}">{{ status }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" id="update-status-btn" disabled>Update Status</button>
+    </form>
+
+    <script>
+        // JavaScript for live search and selecting customers
+        const findCustomersBtn = document.getElementById('find-customers-btn');
+        const searchBar = document.getElementById('search-bar');
+        const customerListDiv = document.getElementById('customer-list');
+        const selectedCustomersCard = document.getElementById('selected-customers-card');
+        const selectedCustomersInput = document.getElementById('selected_customers_input');
+        const selectedCustomersInputForStatus = document.getElementById('selected_customers_input_for_status');
+        const fileNameHidden = document.getElementById('file_name_hidden');
+        const updateStatusBtn = document.getElementById('update-status-btn');
+        let customers = [];
+        let selectedCustomers = [];
+
+        // Find customers based on the selected day (file)
+        findCustomersBtn.addEventListener('click', function() {
+            const selectedFile = document.getElementById('file_name').value;
+            if (selectedFile) {
+                fetchCustomers(selectedFile);
+                fileNameHidden.value = selectedFile;  // Store the selected file for status update
+            }
+        });
+
+        // Function to fetch customers from the selected file
+        function fetchCustomers(fileName) {
+            fetch(`/find_customers`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `file_name=${fileName}`,
+            })
+            .then(response => response.json())
+            .then(data => {
+                customers = data;
+                searchBar.disabled = false;  // Enable the search bar
+            })
+            .catch(error => console.error('Error fetching customers:', error));
+        }
+
+        // Live search for customers
+        searchBar.addEventListener('input', function() {
+            const query = searchBar.value.toLowerCase();
+            customerListDiv.innerHTML = '';  // Clear the customer list
+            const filteredCustomers = customers.filter(customer => customer.toLowerCase().startsWith(query));
+
+            // Display filtered customers
+            filteredCustomers.forEach(customer => {
+                const customerElement = document.createElement('div');
+                customerElement.textContent = customer;
+                customerElement.classList.add('customer-list-item');
+                customerElement.addEventListener('click', function() {
+                    if (!selectedCustomers.includes(customer) && selectedCustomers.length < 100) {
+                        selectedCustomers.push(customer);  // Add to selected customers
+                        updateSelectedCustomersCard();
+                        updateStatusBtn.disabled = false;  // Enable the status update button
+                    }
+                });
+                customerListDiv.appendChild(customerElement);
+            });
+        });
+
+        // Update the card with selected customer names and their details
+        function updateSelectedCustomersCard() {
+            selectedCustomersCard.innerHTML = selectedCustomers.join('<br>');  // Display selected customers
+            selectedCustomersInput.value = selectedCustomers.join(',');  // Update hidden input field
+            selectedCustomersInputForStatus.value = selectedCustomers.join(',');  // For status update
+        }
+    </script>
+
+   <!-- Existing Orders will now be dynamically loaded -->
+<h2>Existing Orders for Selected Day</h2>
+<div id="existing-orders">
+    <table>
+        <thead>
+            <tr>
+                <th>Customer Name</th>
+                <th>Cloth Type</th>
+                <th>Status</th>
+                <th>File Name</th>
+                <th>Download</th>
+            </tr>
+        </thead>
+        <tbody id="order-table-body">
+            <!-- Order rows will be inserted here -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+    document.getElementById('find-customers-btn').addEventListener('click', function() {
+        const selectedFile = document.getElementById('file_name').value;
+        fetch(`/get_orders_by_day`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `file_name=${selectedFile}`,
+        })
+        .then(response => response.json())
+        .then(data => {
+            const orderTableBody = document.getElementById('order-table-body');
+            orderTableBody.innerHTML = '';  // Clear previous rows
+
+            if (data.orders.length > 0) {
+                data.orders.forEach(order => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${order['Customer Name']}</td>
+                        <td>${order['Cloth Type']}</td>
+                        <td>${order['Status']}</td>
+                        <td>${data.file_name}</td>
+                        <td><a href="/open_excel/${data.file_name}">Download</a></td>
+                    `;
+                    orderTableBody.appendChild(row);
+                });
+            } else {
+                orderTableBody.innerHTML = '<tr><td colspan="5">No orders found for the selected day.</td></tr>';
+            }
+        })
+        .catch(error => console.error('Error fetching orders:', error));
+    });
+</script>
+
+    <!-- Close the day -->
+    <h2>Close the Day</h2>
+    <form action="{{ url_for('close_day_route') }}" method="post">
+        <button type="submit">Close Day</button>
+    </form>
+</body>
+</html>
